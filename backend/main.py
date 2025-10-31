@@ -1,67 +1,29 @@
 import threading
-# Job tracking for cancellation
-transcription_jobs = {}
-
-
-
-
-
-
-"""
-FastAPI backend for video and audio transcription using OpenAI Whisper.
-
-This service exposes a single `/transcribe` endpoint that accepts either
-uploaded files or a URL. It uses the `openai/whisper-large-v2` model via
-Hugging Face Transformers to convert speech to text in the target language.
-
-The endpoint will accept up to three files at once or a single URL.  For
-videos, the audio track is extracted using MoviePy.  Downloads of remote
-media are handled via `yt-dlp` so that common video platforms (such as
-YouTube) are supported.
-
-To run the server locally:
-
-```bash
-pip install -r requirements.txt
-uvicorn main:app --reload --port 8000
-```
-
-The corresponding React front‑end is found in the `frontend/` directory.
-"""
-
 import os
 import uuid
 import shutil
 from typing import List, Optional
 from fastapi.responses import FileResponse
-
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
-
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-
 from auth import router as auth_router
-
-
 from transformers import WhisperProcessor, WhisperForConditionalGeneration
 import torch
 import numpy as np
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+transcription_jobs = {}
 try:
     # MoviePy is used to extract audio from video files.  If it's not
     # installed, videos cannot be processed.  See requirements.txt.
     import moviepy.editor as mp
 except ImportError as exc:
     mp = None
-
-
-
+    
 # Directory to store exported transcriptions
 EXPORT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "exports"))
 os.makedirs(EXPORT_DIR, exist_ok=True)
-
-
 
 app = FastAPI(title="Video & Audio Transcription API")
 
@@ -145,8 +107,6 @@ def extract_audio_from_video(video_path: str, temp_dir: str) -> str:
     return audio_path
 
 
-
-
 def transcribe_audio(audio_path: str, language: str, task: str, model_size: str = "large", chunk_length_s: int = 30, max_workers: int = 2, job_id: str = None) -> str:
     """
     Transcribe a single audio file into the requested language, using chunking and parallel processing.
@@ -207,17 +167,8 @@ async def transcribe(
     model_size: str = Form("large"),
     job_id: Optional[str] = Form(None),
 ):
-    """Transcribe uploaded audio/video files or a remote video/audio URL.
-
-    Either `files` or `url` must be provided.  A maximum of three files
-    may be uploaded at once.  The optional `language` and `task` form
-    fields allow the caller to specify the target language and whether
-    to perform transcription (speech recognition) or translation.
-    """
-
     if not files and not url:
         raise HTTPException(status_code=400, detail="No files or URL provided")
-
 
     # Generate or use job_id for this transcription
     if not job_id:
