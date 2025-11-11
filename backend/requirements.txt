@@ -7,3 +7,4 @@ yt-dlp==2024.05.27
 python-multipart==0.0.9
 fastapi[all]==0.110.0
 python-jose[cryptography]
+numpy==1.26.4
