@@ -264,3 +264,10 @@ def download_transcription(filename: str):
     if not os.path.isfile(file_path):
         raise HTTPException(status_code=404, detail="File not found")
     return FileResponse(file_path, media_type="text/plain", filename=filename)
+
+
+# Endpoint to serve exported .txt files
+@app.get("/")
+def home():
+    return JSONResponse(content={"message": "Welcome to the Video & Audio Transcription API"})
+
